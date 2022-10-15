@@ -4,6 +4,7 @@ from flask_login import login_required, login_user, logout_user, current_user
 from datetime import datetime as dt
 import uuid
 import pytz
+from sqlalchemy import delete
 
 from app import app, db
 from models import TrackData, LinkHits, Users
@@ -100,6 +101,21 @@ def tracking_data(utm_id):
         flash('Sorry, Not a valid UTM id!')
         return redirect(url_for('tracklist'))
 
+
+@app.route('/delete/<utm_id>', methods=['DELETE', 'GET'])
+@login_required
+def delete(utm_id):
+    '''Deletes the tracking list'''
+    deleteData = TrackData.query.filter_by(utmId = utm_id).first()
+    #deleteDataLink = LinkHits.query.filter_by(utmId = utm_id).all()
+    deleteStmt = (delete(TrackData.__tablename__).where(TrackData.__tablename__.c.utmID == LinkHits.__tablename__.c.utmId).where(LinkHits.__tablename__.c.utmId == utm_id))
+    if deleteData:
+        db.session.execute(deleteStmt)
+        db.session.commit()
+        flash('Tracklist deleted successfully!')
+    else:
+        abort(400)
+    return redirect(url_for('index'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
