@@ -106,22 +106,18 @@ def tracking_data(utm_id):
 @login_required
 def delete(utm_id):
     '''Deletes the tracking list'''
-    deleteData = TrackData.query.filter_by(utmId = utm_id).first()
-    tracklist = TrackData.query.all()
-    #deleteStmt = f"DELETE track_data, link_hits  FROM track_data  INNER JOIN link_hits WHERE track_data.utmId = link_hits.utmId and track_data.utmId = {utm_id}"
-    deleteStmt = f"DELETE td, lh FROM track_data td, link_hits lh WHERE td.utmId = {utm_id} AND td.utmId = lh.utmId"
-    #deleteStmt = (delete(TrackData.__tablename__).where(TrackData.__tablename__.c.utmID == LinkHits.__tablename__.c.utmId).where(LinkHits.__tablename__.c.utmId == utm_id))
-    if deleteData:
-        db.session.execute(text(deleteStmt))
+    deleteData = TrackData.query.filter_by(utmId = utm_id).delete()
+    LinkHits.query.filter_by(utmId = utm_id).delete()
+    countTrackList = TrackData.query.count()
+    if deleteData and countTrackList > 0:
         db.session.commit()
         flash('Tracklist deleted successfully!')
+        return redirect(url_for('tracklist'))
+    elif deleteData and countTrackList == 0:
+        db.session.commit()
+        return redirect(url_for('index'))
     else:
         abort(400)
-
-    if tracklist:
-        return redirect(url_for('tracklist'))
-    else:
-        return redirect(url_for('index'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
