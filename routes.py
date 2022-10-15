@@ -4,7 +4,7 @@ from flask_login import login_required, login_user, logout_user, current_user
 from datetime import datetime as dt
 import uuid
 import pytz
-from sqlalchemy import delete
+from sqlalchemy import text
 
 from app import app, db
 from models import TrackData, LinkHits, Users
@@ -107,15 +107,21 @@ def tracking_data(utm_id):
 def delete(utm_id):
     '''Deletes the tracking list'''
     deleteData = TrackData.query.filter_by(utmId = utm_id).first()
-    #deleteDataLink = LinkHits.query.filter_by(utmId = utm_id).all()
-    deleteStmt = (delete(TrackData.__tablename__).where(TrackData.__tablename__.c.utmID == LinkHits.__tablename__.c.utmId).where(LinkHits.__tablename__.c.utmId == utm_id))
+    tracklist = TrackData.query.all()
+    #deleteStmt = f"DELETE track_data, link_hits  FROM track_data  INNER JOIN link_hits WHERE track_data.utmId = link_hits.utmId and track_data.utmId = {utm_id}"
+    deleteStmt = f"DELETE td, lh FROM track_data td, link_hits lh WHERE td.utmId = {utm_id} AND td.utmId = lh.utmId"
+    #deleteStmt = (delete(TrackData.__tablename__).where(TrackData.__tablename__.c.utmID == LinkHits.__tablename__.c.utmId).where(LinkHits.__tablename__.c.utmId == utm_id))
     if deleteData:
-        db.session.execute(deleteStmt)
+        db.session.execute(text(deleteStmt))
         db.session.commit()
         flash('Tracklist deleted successfully!')
     else:
         abort(400)
-    return redirect(url_for('index'))
+
+    if tracklist:
+        return redirect(url_for('tracklist'))
+    else:
+        return redirect(url_for('index'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
